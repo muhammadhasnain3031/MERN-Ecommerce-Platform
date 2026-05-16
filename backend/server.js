@@ -14,13 +14,11 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Explicitly handle OPTIONS pre-flight requests at app level
 app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ── MongoDB Connection (Background Level) ─────────────────────
-// Isko hum bina block kiye connect karenge taake Vercel functions instantly route utha sakein
+
 mongoose.connect(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 30000,
   socketTimeoutMS:          60000,
@@ -42,13 +40,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ── Vercel Compatibility / Local Fallback ─────────────────────
-// Agar code local computer par chal raha ho toh listen chalega, Vercel par listen bypass ho jayega
+
 if (process.env.NODE_ENV !== 'production') {
   app.listen(process.env.PORT || 5000, () => {
     console.log('✅ Local Server running on port', process.env.PORT || 5000);
   });
 }
 
-// Yeh Vercel ke liye sabse important line hai!
 module.exports = app;
