@@ -5,8 +5,11 @@ require('dotenv').config();
 
 const app = express();
 
-app.use(cors({ origin: '*' }));
-app.use(express.json());
+app.use(cors({
+  origin: 'https://mern-ecommerce-platform-fui5.vercel.app',
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"]
+}));app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ── Routes ────────────────────────────────────────────────────
