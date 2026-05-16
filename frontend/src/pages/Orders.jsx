@@ -284,7 +284,7 @@ export default function Orders() {
   const fetchOrders = useCallback(async () => {
     if (!token) return;
     try {
-      const res  = await fetch('http://localhost:5000/api/orders/myorders', {
+      const res  = await fetch('https://mern-ecommerce-platform-olhz.vercel.app/api/orders/myorders', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();

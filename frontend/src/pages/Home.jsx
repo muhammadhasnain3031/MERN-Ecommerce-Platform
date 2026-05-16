@@ -132,8 +132,8 @@ export default function Home() {
   const fetchProducts = useCallback(async () => {
     try {
       const [f, l] = await Promise.all([
-        fetch('http://localhost:5000/api/products?featured=true&limit=8').then(r => r.json()),
-        fetch('http://localhost:5000/api/products?limit=8&sort=newest').then(r => r.json()),
+        fetch('https://mern-ecommerce-platform-olhz.vercel.app/api/products?featured=true&limit=8').then(r => r.json()),
+        fetch('https://mern-ecommerce-platform-olhz.vercel.app/api/products?limit=8&sort=newest').then(r => r.json()),
       ]);
       setFeatured(f.products || []);
       setLatest(l.products   || []);

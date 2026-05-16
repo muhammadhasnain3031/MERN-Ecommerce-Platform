@@ -19,7 +19,7 @@ export default function AdminOrders({ token }) {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res  = await fetch('http://localhost:5000/api/orders', {
+      const res  = await fetch('https://mern-ecommerce-platform-olhz.vercel.app/api/orders', {
         headers: { Authorization:`Bearer ${token}` },
       });
       const data = await res.json();
@@ -33,7 +33,7 @@ export default function AdminOrders({ token }) {
   const updateStatus = async (orderId, newStatus) => {
     setUpdating(orderId + newStatus);
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
+      const res = await fetch(`https://mern-ecommerce-platform-olhz.vercel.app/api/orders/${orderId}/status`, {
         method:  'PUT',
         headers: { 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
         body:    JSON.stringify({ status: newStatus }),

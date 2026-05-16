@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const API = 'http://localhost:5000/api/products';
+const API = 'https://mern-ecommerce-platform-olhz.vercel.app/api/products';
 
 export const fetchProducts = createAsyncThunk('products/fetchAll', async (params = {}) => {
   const query = new URLSearchParams(params).toString();

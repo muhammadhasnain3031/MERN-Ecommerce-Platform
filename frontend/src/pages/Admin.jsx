@@ -63,7 +63,7 @@ export default function Admin() {
 
     try {
       const res = await fetch(
-        'http://localhost:5000/api/products?limit=100',
+        'https://mern-ecommerce-platform-olhz.vercel.app/api/products?limit=100',
         {
           headers: {
             Authorization: 'Bearer ' + token,
@@ -148,8 +148,8 @@ export default function Admin() {
       });
 
       const url = editProduct
-        ? `http://localhost:5000/api/products/${editProduct._id}`
-        : 'http://localhost:5000/api/products';
+        ? `https://mern-ecommerce-platform-olhz.vercel.app/api/products/${editProduct._id}`
+        : 'https://mern-ecommerce-platform-olhz.vercel.app/api/products';
 
       const method = editProduct ? 'PUT' : 'POST';
 
@@ -222,7 +222,7 @@ export default function Admin() {
     if (!confirmDelete) return;
 
     try {
-      await fetch(`http://localhost:5000/api/products/${id}`, {
+      await fetch(`https://mern-ecommerce-platform-olhz.vercel.app/api/products/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

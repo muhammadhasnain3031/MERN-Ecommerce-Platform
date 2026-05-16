@@ -23,7 +23,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "name": "frontend",
-  "proxy": "http://localhost:5000"
+  "proxy": "https://mern-ecommerce-platform-olhz.vercel.app/"
   },
   "eslintConfig": {
     "extends": [

@@ -27,7 +27,7 @@ export default function Checkout() {
         image:    i.product.image,
       }));
 
-      await axios.post('http://localhost:5000/api/orders',
+      await axios.post('https://mern-ecommerce-platform-olhz.vercel.app/api/orders',
         { items: orderItems, totalPrice: total, address, phone },
         { headers: { Authorization: `Bearer ${token}` } }
       );

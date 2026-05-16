@@ -29,7 +29,7 @@ export default function Shop() {
       if (priceRange.min)     params.set('minPrice', priceRange.min);
       if (priceRange.max)     params.set('maxPrice', priceRange.max);
 
-      const res  = await fetch(`http://localhost:5000/api/products?${params}`);
+      const res  = await fetch(`https://mern-ecommerce-platform-olhz.vercel.app/api/products?${params}`);
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       setProducts(data.products || []);

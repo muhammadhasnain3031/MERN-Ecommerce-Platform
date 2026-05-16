@@ -20,7 +20,7 @@ export default function ProductDetail() {
   const [reviewing,  setReviewing]  = useState(false);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/products/${id}`)
+    fetch(`https://mern-ecommerce-platform-olhz.vercel.app/api/products/${id}`)
       .then(r => r.json())
       .then(data => {
         setProduct(data);
@@ -45,7 +45,7 @@ export default function ProductDetail() {
     if (!user) { navigate('/login'); return; }
     setReviewing(true);
     try {
-      await fetch(`http://localhost:5000/api/products/${id}/reviews`, {
+      await fetch(`https://mern-ecommerce-platform-olhz.vercel.app/api/products/${id}/reviews`, {
         method:  'POST',
         headers: {
           'Content-Type':  'application/json',
@@ -55,7 +55,7 @@ export default function ProductDetail() {
       });
       setComment('');
       // Refresh product
-      const res  = await fetch(`http://localhost:5000/api/products/${id}`);
+      const res  = await fetch(`https://mern-ecommerce-platform-olhz.vercel.app/api/products/${id}`);
       const data = await res.json();
       setProduct(data);
     } catch (err) { console.error(err); }
