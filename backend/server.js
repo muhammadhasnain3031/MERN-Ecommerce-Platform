@@ -5,19 +5,11 @@ require('dotenv').config();
 
 const app = express();
 
-// Custom Middleware to FORCE allow headers on Vercel
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
-  res.header("Access-Control-Allow-Headers", "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization");
-  
-  // Handle Preflight OPTIONS request
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-  next();
-});
+app.use(cors({
+  origin: 'https://mern-ecommerce-platform-fui5.vercel.app',
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"]
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
