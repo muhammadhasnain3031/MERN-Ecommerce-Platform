@@ -7,8 +7,7 @@ const app = express();
 
 app.use(cors({
   origin: 'https://mern-ecommerce-platform-fui5.vercel.app',
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"]
+  credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
