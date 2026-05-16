@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const app = express();
 
+// ── CORS Configuration ────────────────────────────────────────
 const corsOptions = {
   origin: 'https://mern-ecommerce-platform-fui5.vercel.app',
   credentials: true,
@@ -13,18 +14,33 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
 app.options('*', cors(corsOptions));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ── MongoDB Connection Middleware ─────────────────────────────
+// Serverless environments mein connection state check karna zaroori hai taake har invocation par naya pool na bante
+let isConnected = false;
+const connectDB = async () => {
+  if (isConnected) return;
+  try {
+    const db = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 15000,
+      socketTimeoutMS:          30000,
+    });
+    isConnected = db.connections[0].readyState === 1;
+    console.log('✅ MongoDB Connected Successfully');
+  } catch (err) {
+    console.error('❌ MongoDB Connection Failed:', err.message);
+  }
+};
 
-mongoose.connect(process.env.MONGO_URI, {
-  serverSelectionTimeoutMS: 30000,
-  socketTimeoutMS:          60000,
-})
-.then(() => console.log('✅ MongoDB Connected'))
-.catch(err => console.error('❌ MongoDB failed:', err.message));
+// Har incoming request se pehle check karein ke DB online hai ya nahi
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
 
 // ── Routes ────────────────────────────────────────────────────
 app.use('/api/auth',     require('./routes/auth'));
@@ -36,15 +52,21 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     db: mongoose.connection.readyState,
-    environment: 'production'
+    environment: 'production_serverless'
   });
 });
 
-
+// ── Local Fallback Running ────────────────────────────────────
 if (process.env.NODE_ENV !== 'production') {
   app.listen(process.env.PORT || 5000, () => {
-    console.log('✅ Local Server running on port', process.env.PORT || 5000);
+    console.log('✅ Local Server active on port', process.env.PORT || 5000);
   });
 }
+
+// Global Error Handler taake app kabhi bhi 500 crash par blank response na de
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong on the serverless runtime!' });
+});
 
 module.exports = app;
