@@ -5,10 +5,17 @@ require('dotenv').config();
 
 const app = express();
 
-app.use(cors({
+const corsOptions = {
   origin: 'https://mern-ecommerce-platform-fui5.vercel.app',
-  credentials: true
-}));
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+};
+
+app.use(cors(corsOptions));
+
+// Explicitly handle OPTIONS pre-flight requests at app level
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
