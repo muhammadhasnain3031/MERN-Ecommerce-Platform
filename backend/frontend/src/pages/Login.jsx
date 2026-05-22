@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../store/authSlice';
-import { loadUserCart } from '../store/cartSlice';
-import BASE_URL from '../api';   // ✅ FIX
 
 export default function Login() {
   const dispatch  = useDispatch();
@@ -16,7 +14,7 @@ export default function Login() {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const res  = await fetch(`${BASE_URL}/api/auth/login`, {   // ✅ FIX
+      const res  = await fetch('https://mern-ecommerce-platform-olhz.vercel.app/api/auth/login', {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify({ email: form.email.trim().toLowerCase(), password: form.password }),
@@ -24,7 +22,6 @@ export default function Login() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed');
       dispatch(setCredentials({ user: data.user, token: data.token }));
-      dispatch(loadUserCart());
       navigate(data.user.isAdmin ? '/admin' : '/');
     } catch (err) { setError(err.message); }
     setLoading(false);
@@ -72,7 +69,7 @@ export default function Login() {
                 placeholder={f.ph} required
                 style={{ width:'100%', padding:'12px 16px', borderRadius:12, border:'1.5px solid #e2e8f0', fontSize:14, background:'#f8fafc', boxSizing:'border-box', transition:'border-color .2s' }}
                 onFocus={e => e.target.style.borderColor='#2563eb'}
-                onBlur={e  => e.target.style.borderColor='#e2e8f0'}
+                onBlur={e => e.target.style.borderColor='#e2e8f0'}
               />
             </div>
           ))}

@@ -1,98 +1,80 @@
-const BASE_URL = 'https://mern-ecommerce-platform-olhz.vercel.app/';
+// src/services/api.js
+import BASE_URL from '../api';
 
-const getToken = () => {
-  return localStorage.getItem('token') || '';
-};
+const getToken = () => localStorage.getItem('token');
 
-const headers = (isFormData = false) => {
-  const h = { Authorization: `Bearer ${getToken()}` };
-  if (!isFormData) h['Content-Type'] = 'application/json';
-  return h;
-};
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  Authorization: `Bearer ${getToken()}`,
+});
 
-// ── Auth ──────────────────────────────────────────────────────
-export const authAPI = {
-  login: (data) =>
-    fetch(`${BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    }).then(r => r.json()),
-
-  register: (data) =>
-    fetch(`${BASE_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    }).then(r => r.json()),
-};
-
-// ── Products ──────────────────────────────────────────────────
-export const productAPI = {
-  getAll: (params = {}) => {
-    const q = new URLSearchParams(params).toString();
-    return fetch(`${BASE_URL}/api/products?${q}`)
-      .then(r => r.json());
+// ── Order API ─────────────────────────────────────────────────
+export const orderAPI = {
+  create: async (orderData) => {
+    const res = await fetch(`${BASE_URL}/api/orders`, {
+      method:  'POST',
+      headers: authHeaders(),
+      body:    JSON.stringify(orderData),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Order failed');
+    return data;
   },
 
-  getById: (id) =>
-    fetch(`${BASE_URL}/api/products/${id}`)
-      .then(r => r.json()),
+  getMyOrders: async () => {
+    const res = await fetch(`${BASE_URL}/api/orders/myorders`, {
+      headers: authHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed');
+    return data;
+  },
 
-  getFeatured: () =>
-    fetch(`${BASE_URL}/api/products/featured`)
-      .then(r => r.json()),
+  getAll: async () => {
+    const res = await fetch(`${BASE_URL}/api/orders`, {
+      headers: authHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed');
+    return data;
+  },
 
-  create: (formData) =>
-    fetch(`${BASE_URL}/api/products`, {
-      method:  'POST',
-      headers: { Authorization: `Bearer ${getToken()}` },
-      body:    formData,
-    }).then(r => r.json()),
-
-  update: (id, formData) =>
-    fetch(`${BASE_URL}/api/products/${id}`, {
+  updateStatus: async (id, status) => {
+    const res = await fetch(`${BASE_URL}/api/orders/${id}/status`, {
       method:  'PUT',
-      headers: { Authorization: `Bearer ${getToken()}` },
-      body:    formData,
-    }).then(r => r.json()),
-
-  delete: (id) =>
-    fetch(`${BASE_URL}/api/products/${id}`, {
-      method:  'DELETE',
-      headers: headers(),
-    }).then(r => r.json()),
-
-  addReview: (id, data) =>
-    fetch(`${BASE_URL}/api/products/${id}/reviews`, {
-      method:  'POST',
-      headers: headers(),
-      body:    JSON.stringify(data),
-    }).then(r => r.json()),
+      headers: authHeaders(),
+      body:    JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed');
+    return data;
+  },
 };
 
-// ── Orders ────────────────────────────────────────────────────
-export const orderAPI = {
-  create: (data) =>
-    fetch(`${BASE_URL}/api/orders`, {
+// ── Product API ───────────────────────────────────────────────
+export const productAPI = {
+  getAll: async (params = '') => {
+    const res  = await fetch(`${BASE_URL}/api/products?${params}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed');
+    return data;
+  },
+
+  getById: async (id) => {
+    const res  = await fetch(`${BASE_URL}/api/products/${id}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed');
+    return data;
+  },
+
+  addReview: async (id, reviewData) => {
+    const res = await fetch(`${BASE_URL}/api/products/${id}/reviews`, {
       method:  'POST',
-      headers: headers(),
-      body:    JSON.stringify(data),
-    }).then(r => r.json()),
-
-  getMyOrders: () =>
-    fetch(`${BASE_URL}/api/orders/myorders`, {
-      headers: headers(),
-    }).then(r => r.json()),
-
-  getAll: () =>
-    fetch(`${BASE_URL}/api/orders`, {
-      headers: headers(),
-    }).then(r => r.json()),
-
-  markPaid: (id) =>
-    fetch(`${BASE_URL}/api/orders/${id}/pay`, {
-      method:  'PUT',
-      headers: headers(),
-    }).then(r => r.json()),
+      headers: authHeaders(),
+      body:    JSON.stringify(reviewData),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed');
+    return data;
+  },
 };

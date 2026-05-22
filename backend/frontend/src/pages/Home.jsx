@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../store/cartSlice';
-import { productAPI } from '../services/api';  // ✅ FIX
+
+const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect width='300' height='300' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%2394a3b8' font-size='40'%3E📦%3C/text%3E%3C/svg%3E";
 
 const CATEGORIES = [
   { name:'Electronics', icon:'📱', color:'#dbeafe', text:'#1e40af' },
@@ -39,6 +40,7 @@ function ProductCard({ product }) {
           transition: 'all .3s ease',
         }}>
 
+        {/* Image */}
         <div style={{ position:'relative', paddingTop:'72%', background:'#f8fafc', overflow:'hidden' }}>
           {imgSrc ? (
             <img src={imgSrc} alt={product.name}
@@ -58,6 +60,8 @@ function ProductCard({ product }) {
               <span style={{ fontSize:48, opacity:.4 }}>📦</span>
             </div>
           )}
+
+          {/* Badges */}
           <div style={{ position:'absolute', top:10, left:10, display:'flex', flexDirection:'column', gap:4 }}>
             {product.featured && (
               <span style={{ background:'linear-gradient(135deg,#f59e0b,#f97316)', color:'#fff', padding:'3px 9px', borderRadius:20, fontSize:10, fontWeight:700 }}>⭐ Featured</span>
@@ -71,6 +75,7 @@ function ProductCard({ product }) {
           </div>
         </div>
 
+        {/* Info */}
         <div style={{ padding:'14px 14px 16px', flex:1, display:'flex', flexDirection:'column' }}>
           {product.category && (
             <span style={{ color:'#7c3aed', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:.6, marginBottom:5 }}>
@@ -127,8 +132,8 @@ export default function Home() {
   const fetchProducts = useCallback(async () => {
     try {
       const [f, l] = await Promise.all([
-        productAPI.getAll('featured=true&limit=8'),  // ✅ FIX
-        productAPI.getAll('limit=8&sort=newest'),     // ✅ FIX
+        fetch('https://mern-ecommerce-platform-olhz.vercel.app/api/products?featured=true&limit=8').then(r => r.json()),
+        fetch('https://mern-ecommerce-platform-olhz.vercel.app/api/products?limit=8&sort=newest').then(r => r.json()),
       ]);
       setFeatured(f.products || []);
       setLatest(l.products   || []);
@@ -145,12 +150,17 @@ export default function Home() {
 
   return (
     <div>
-      {/* Hero */}
+
+      {/* ── Hero ── */}
       <section style={{
         background: 'linear-gradient(135deg,#0f172a 0%,#1e3a8a 45%,#2563eb 75%,#7c3aed 100%)',
         minHeight: 560, position:'relative', overflow:'hidden',
         display:'flex', alignItems:'center',
       }}>
+        {/* Decorative circles */}
+        {[['-100px','-100px','500px','rgba(124,58,237,.15)'],['-80px','auto','-80px','400px','rgba(37,99,235,.15)']].map(([top,right,bottom,size,bg],i) => (
+          <div key={i} style={{ position:'absolute', top, right, bottom, width:size, height:size, background:bg, borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none' }} />
+        ))}
         <div style={{ position:'absolute', top:'-80px', right:'-80px', width:'400px', height:'400px', background:'rgba(124,58,237,.12)', borderRadius:'50%', filter:'blur(80px)' }} />
         <div style={{ position:'absolute', bottom:'-80px', left:'-80px', width:'350px', height:'350px', background:'rgba(37,99,235,.12)', borderRadius:'50%', filter:'blur(80px)' }} />
 
@@ -165,7 +175,10 @@ export default function Home() {
               <span style={{ color:'#fbbf24', fontSize:12, fontWeight:700 }}>New Arrivals Every Week · Free Delivery on PKR 2000+</span>
             </div>
 
-            <h1 style={{ fontSize:'clamp(30px,5.5vw,60px)', fontWeight:900, color:'#fff', lineHeight:1.15, marginBottom:18 }}>
+            <h1 style={{
+              fontSize:'clamp(30px,5.5vw,60px)', fontWeight:900, color:'#fff',
+              lineHeight:1.15, marginBottom:18,
+            }}>
               Pakistan's Most{' '}
               <span style={{ background:'linear-gradient(135deg,#f59e0b,#f97316)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
                 Trusted
@@ -177,6 +190,7 @@ export default function Home() {
               Shop the latest electronics, fashion, books and more. Authentic products, best prices, fast delivery.
             </p>
 
+            {/* Search */}
             <form onSubmit={handleSearch} style={{ display:'flex', gap:8, marginBottom:32, maxWidth:460 }}>
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Search for products..."
@@ -200,15 +214,21 @@ export default function Home() {
                 color:'#fff', padding:'13px 28px', borderRadius:13,
                 fontWeight:800, fontSize:15,
                 boxShadow:'0 4px 18px rgba(245,158,11,.4)',
-              }}>🛍️ Shop Now</Link>
+              }}>
+                🛍️ Shop Now
+              </Link>
               <Link to="/shop?category=Electronics" style={{
                 background:'rgba(255,255,255,.12)',
                 border:'1.5px solid rgba(255,255,255,.25)',
                 color:'#fff', padding:'13px 28px', borderRadius:13,
-                fontWeight:700, fontSize:15, backdropFilter:'blur(10px)',
-              }}>View Deals →</Link>
+                fontWeight:700, fontSize:15,
+                backdropFilter:'blur(10px)',
+              }}>
+                View Deals →
+              </Link>
             </div>
 
+            {/* Stats */}
             <div style={{ display:'flex', gap:28, marginTop:36, flexWrap:'wrap' }}>
               {[['500+','Products'],['50k+','Customers'],['100%','Authentic'],['Fast','Delivery']].map(([v,l]) => (
                 <div key={l}>
@@ -221,7 +241,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Strip */}
+      {/* ── Features Strip ── */}
       <section style={{ background:'#fff', borderBottom:'1px solid #e2e8f0', padding:'16px 0' }}>
         <div className="container">
           <div style={{ display:'flex', justifyContent:'space-around', flexWrap:'wrap', gap:12 }}>
@@ -244,7 +264,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories */}
+      {/* ── Categories ── */}
       <section style={{ padding:'48px 0' }}>
         <div className="container">
           <div style={{ textAlign:'center', marginBottom:32 }}>
@@ -255,11 +275,19 @@ export default function Home() {
             {CATEGORIES.map(cat => (
               <Link key={cat.name} to={`/shop?category=${cat.name}`} style={{ textDecoration:'none' }}>
                 <div style={{
-                  background: cat.color, borderRadius:16, padding:'20px 16px', textAlign:'center',
-                  transition:'all .2s', cursor:'pointer', border:`1px solid ${cat.text}20`,
+                  background: cat.color,
+                  borderRadius:16, padding:'20px 16px', textAlign:'center',
+                  transition:'all .2s', cursor:'pointer',
+                  border:`1px solid ${cat.text}20`,
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,.1)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none'; }}>
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform  = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow  = '0 8px 24px rgba(0,0,0,.1)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}>
                   <p style={{ fontSize:32, marginBottom:8 }}>{cat.icon}</p>
                   <p style={{ fontWeight:700, fontSize:13, color:cat.text }}>{cat.name}</p>
                 </div>
@@ -269,7 +297,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Products */}
+      {/* ── Featured Products ── */}
       {!loading && featured.length > 0 && (
         <section style={{ padding:'0 0 48px', background:'#f8fafc' }}>
           <div className="container">
@@ -278,7 +306,10 @@ export default function Home() {
                 <p style={{ color:'#f59e0b', fontWeight:700, fontSize:12, textTransform:'uppercase', letterSpacing:1, marginBottom:4 }}>Hand-picked</p>
                 <h2 style={{ fontSize:'clamp(20px,3vw,28px)', fontWeight:900, color:'#0f172a' }}>⭐ Featured Products</h2>
               </div>
-              <Link to="/shop?featured=true" style={{ color:'#2563eb', fontWeight:700, fontSize:14, border:'1.5px solid #2563eb', padding:'8px 18px', borderRadius:10 }}>View All →</Link>
+              <Link to="/shop?featured=true" style={{
+                color:'#2563eb', fontWeight:700, fontSize:14,
+                border:'1.5px solid #2563eb', padding:'8px 18px', borderRadius:10,
+              }}>View All →</Link>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:18 }}>
               {featured.map(p => <ProductCard key={p._id} product={p} />)}
@@ -287,7 +318,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* Latest Products */}
+      {/* ── Latest Products ── */}
       <section style={{ padding:'48px 0 60px' }}>
         <div className="container">
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24, flexWrap:'wrap', gap:12 }}>
@@ -295,7 +326,10 @@ export default function Home() {
               <p style={{ color:'#7c3aed', fontWeight:700, fontSize:12, textTransform:'uppercase', letterSpacing:1, marginBottom:4 }}>Fresh in store</p>
               <h2 style={{ fontSize:'clamp(20px,3vw,28px)', fontWeight:900, color:'#0f172a' }}>🆕 Latest Products</h2>
             </div>
-            <Link to="/shop" style={{ color:'#2563eb', fontWeight:700, fontSize:14, border:'1.5px solid #2563eb', padding:'8px 18px', borderRadius:10 }}>Shop All →</Link>
+            <Link to="/shop" style={{
+              color:'#2563eb', fontWeight:700, fontSize:14,
+              border:'1.5px solid #2563eb', padding:'8px 18px', borderRadius:10,
+            }}>Shop All →</Link>
           </div>
 
           {loading ? (
@@ -308,6 +342,7 @@ export default function Home() {
             <div style={{ textAlign:'center', padding:'60px 0', color:'#94a3b8' }}>
               <p style={{ fontSize:50, marginBottom:12 }}>📦</p>
               <p style={{ fontWeight:700, fontSize:18 }}>No products yet</p>
+              <p style={{ fontSize:14, marginTop:4 }}>Check back soon for new arrivals!</p>
             </div>
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:18 }}>
@@ -320,22 +355,36 @@ export default function Home() {
               display:'inline-flex', alignItems:'center', gap:8,
               background:'linear-gradient(135deg,#2563eb,#7c3aed)',
               color:'#fff', padding:'14px 36px', borderRadius:14,
-              fontWeight:800, fontSize:15, boxShadow:'0 4px 16px rgba(37,99,235,.3)',
-            }}>🛍️ View All Products →</Link>
+              fontWeight:800, fontSize:15,
+              boxShadow:'0 4px 16px rgba(37,99,235,.3)',
+            }}>
+              🛍️ View All Products →
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* Banner */}
-      <section style={{ background:'linear-gradient(135deg,#1e3a8a,#7c3aed)', padding:'48px 24px', textAlign:'center' }}>
+      {/* ── Banner ── */}
+      <section style={{
+        background:'linear-gradient(135deg,#1e3a8a,#7c3aed)',
+        padding:'48px 24px', textAlign:'center',
+      }}>
         <div className="container">
-          <h2 style={{ color:'#fff', fontSize:'clamp(20px,4vw,36px)', fontWeight:900, marginBottom:12 }}>🎁 Get Free Delivery Today!</h2>
-          <p style={{ color:'rgba(255,255,255,.75)', fontSize:16, marginBottom:28 }}>Order above PKR 2,000 and enjoy free nationwide delivery</p>
+          <h2 style={{ color:'#fff', fontSize:'clamp(20px,4vw,36px)', fontWeight:900, marginBottom:12 }}>
+            🎁 Get Free Delivery Today!
+          </h2>
+          <p style={{ color:'rgba(255,255,255,.75)', fontSize:16, marginBottom:28 }}>
+            Order above PKR 2,000 and enjoy free nationwide delivery
+          </p>
           <Link to="/shop" style={{
-            background:'linear-gradient(135deg,#f59e0b,#f97316)', color:'#fff',
-            padding:'14px 36px', borderRadius:14, fontWeight:800, fontSize:16,
-            boxShadow:'0 4px 18px rgba(245,158,11,.4)', display:'inline-block',
-          }}>Start Shopping →</Link>
+            background:'linear-gradient(135deg,#f59e0b,#f97316)',
+            color:'#fff', padding:'14px 36px', borderRadius:14,
+            fontWeight:800, fontSize:16,
+            boxShadow:'0 4px 18px rgba(245,158,11,.4)',
+            display:'inline-block',
+          }}>
+            Start Shopping →
+          </Link>
         </div>
       </section>
     </div>
