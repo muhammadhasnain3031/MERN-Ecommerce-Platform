@@ -8,14 +8,19 @@ const app = express();
 // ── CORS Configuration ────────────────────────────────────────
 const corsOptions = {
   origin: (origin, callback) => {
+    // Allow localhost (any port) for development
+    if (!origin || origin.startsWith('http://localhost')) {
+      return callback(null, true);
+    }
+    // Allow ANY *.vercel.app deployment (future-proof — URLs change each deploy)
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    // Add your custom production domains here if needed
     const allowed = [
       'https://mern-ecommerce-platform-fui5.vercel.app',
       'https://mern-ecommerce-platform-olhz.vercel.app',
     ];
-    // Development mein sab localhost allow — port change hone pe dobara nahi chhona padega
-    if (!origin || origin.startsWith('http://localhost')) {
-      return callback(null, true);
-    }
     if (allowed.includes(origin)) return callback(null, true);
     callback(new Error('CORS blocked: ' + origin));
   },
@@ -63,6 +68,10 @@ app.get('/api/health', (req, res) => {
     db: mongoose.connection.readyState,
     environment: 'production_serverless',
   });
+});
+
+app.get('/', (req, res) => {
+  res.json({ message: '🛒 Sultan Elite E-Commerce API', status: 'running' });
 });
 
 // ── Local Server ──────────────────────────────────────────────

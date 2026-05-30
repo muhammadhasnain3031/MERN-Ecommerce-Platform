@@ -1,7 +1,10 @@
 import axios from 'axios';
 
 // API Base URL
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Local dev → localhost; Production → live backend
+const API_URL = process.env.REACT_APP_API_URL
+  ? process.env.REACT_APP_API_URL + '/api'
+  : 'https://mern-ecommerce-platform-olhz.vercel.app/api';
 
 // Create axios instance
 const api = axios.create({
@@ -32,7 +35,6 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
-    // Return clean error message
     const message = error.response?.data?.message || error.message || 'Something went wrong';
     return Promise.reject(new Error(message));
   }
@@ -82,13 +84,12 @@ export const productAPI = {
   },
 };
 
-// ── Order API (FIXED endpoints to match backend) ──────────────
+// ── Order API ─────────────────────────────────────────────────
 export const orderAPI = {
   create: async (orderData) => {
     const { data } = await api.post('/orders', orderData);
     return data;
   },
-  // ✅ FIXED: backend route is /orders/myorders, not /orders/my
   getMyOrders: async () => {
     const { data } = await api.get('/orders/myorders');
     return data;
@@ -101,7 +102,6 @@ export const orderAPI = {
     const { data } = await api.get(`/orders/${id}`);
     return data;
   },
-  // ✅ FIXED: backend route is /orders/:id/status
   updateStatus: async (id, status) => {
     const { data } = await api.put(`/orders/${id}/status`, { status });
     return data;
@@ -119,19 +119,15 @@ export const cartAPI = {
     return data;
   },
   add: async (productId, quantity) => {
-    const { data } = await api.post('/cart', { productId, quantity });
-    return data;
-  },
-  update: async (productId, quantity) => {
-    const { data } = await api.put('/cart', { productId, quantity });
+    const { data } = await api.post('/cart/add', { productId, quantity });
     return data;
   },
   remove: async (productId) => {
-    const { data } = await api.delete(`/cart/${productId}`);
+    const { data } = await api.delete(`/cart/remove/${productId}`);
     return data;
   },
   clear: async () => {
-    const { data } = await api.delete('/cart');
+    const { data } = await api.delete('/cart/clear');
     return data;
   },
 };
