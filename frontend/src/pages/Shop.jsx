@@ -1,258 +1,142 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { addToCart } from '../store/cartSlice';
-import { productAPI } from '../services/api';  // ✅ FIX
+import { useSearchParams } from 'react-router-dom';
+import { productAPI } from '../services/api';
+import ProductCard from '../components/ProductCard';
 
-const CATEGORIES = ['All','Electronics','Clothing','Books','Home','Sports','Beauty','Toys'];
+const CATEGORIES = ['All', 'Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Beauty', 'Toys', 'General'];
+const SORTS = [
+  { value: 'newest', label: '🆕 Newest' },
+  { value: 'price-low', label: '💰 Price: Low to High' },
+  { value: 'price-high', label: '💎 Price: High to Low' },
+  { value: 'rating', label: '⭐ Top Rated' },
+];
+
+function Skeleton() {
+  return <div style={{ borderRadius: 20, paddingTop: '120%', background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />;
+}
 
 export default function Shop() {
-  const dispatch       = useDispatch();
   const [searchParams] = useSearchParams();
-  const [products,    setProducts]    = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [category,    setCategory]    = useState(searchParams.get('category') || 'All');
-  const [sort,        setSort]        = useState('newest');
-  const [search,      setSearch]      = useState(searchParams.get('search') || '');
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState(searchParams.get('category') || 'All');
+  const [sort, setSort] = useState('newest');
+  const [search, setSearch] = useState(searchParams.get('search') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
-  const [page,        setPage]        = useState(1);
-  const [totalPages,  setTotalPages]  = useState(1);
-  const [total,       setTotal]       = useState(0);
-  const [addedId,     setAddedId]     = useState(null);
-  const [priceRange,  setPriceRange]  = useState({ min:'', max:'' });
+  const [maxPrice, setMaxPrice] = useState(50000);
+  const [appliedMax, setAppliedMax] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page, limit:12, sort });
+      const params = new URLSearchParams({ page, limit: 12, sort });
       if (category !== 'All') params.set('category', category);
-      if (search)             params.set('search',   search);
-      if (priceRange.min)     params.set('minPrice', priceRange.min);
-      if (priceRange.max)     params.set('maxPrice', priceRange.max);
-
-      const data = await productAPI.getAll(params.toString());  // ✅ FIX
-      setProducts(data.products  || []);
-      setTotalPages(data.pages   || 1);
-      setTotal(data.total        || 0);
-    } catch (err) {
-      console.error(err);
-      setProducts([]);
-    }
+      if (search) params.set('search', search);
+      if (appliedMax > 0) params.set('maxPrice', appliedMax);
+      const data = await productAPI.getAll(params.toString());
+      setProducts(data.products || []);
+      setTotalPages(data.pages || 1);
+      setTotal(data.total || 0);
+    } catch (err) { console.error(err); }
     setLoading(false);
-  }, [page, sort, category, search, priceRange]);
+  }, [page, sort, category, search, appliedMax]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  useEffect(() => { setPage(1); }, [category, sort, search, appliedMax]);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setSearch(searchInput);
-    setPage(1);
-  };
-
-  const handleAddToCart = (e, product) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dispatch(addToCart({ ...product, quantity:1 }));
-    setAddedId(product._id);
-    setTimeout(() => setAddedId(null), 2000);
-  };
-
-  const renderStars = (r) =>
-    '★'.repeat(Math.round(r||0)) + '☆'.repeat(5-Math.round(r||0));
+  const handleSearch = (e) => { e.preventDefault(); setSearch(searchInput); };
+  const clearFilters = () => { setCategory('All'); setSort('newest'); setSearch(''); setSearchInput(''); setAppliedMax(0); setMaxPrice(50000); };
 
   return (
-    <div style={{ background:'#f8fafc', minHeight:'100vh' }}>
-      {/* Header */}
-      <div style={{ background:'linear-gradient(135deg,#1e3a8a,#2563eb)', padding:'40px 16px', textAlign:'center' }}>
-        <h1 style={{ color:'#fff', fontSize:'clamp(24px,4vw,40px)', fontWeight:900, marginBottom:8 }}>🛍️ Shop All Products</h1>
-        <p style={{ color:'rgba(255,255,255,.8)', fontSize:15 }}>{total} products available</p>
-        <form onSubmit={handleSearch} style={{ maxWidth:500, margin:'20px auto 0', display:'flex', gap:8 }}>
-          <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
-            placeholder="Search products..."
-            style={{ flex:1, padding:'12px 18px', borderRadius:12, border:'none', fontSize:14, background:'rgba(255,255,255,.15)', color:'#fff', backdropFilter:'blur(10px)' }} />
-          <button type="submit" style={{ padding:'12px 20px', borderRadius:12, border:'none', background:'linear-gradient(135deg,#f59e0b,#f97316)', color:'#fff', fontWeight:700, cursor:'pointer' }}>
-            🔍 Search
-          </button>
-        </form>
-      </div>
-
-      <div className="container" style={{ padding:'24px 16px' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:24 }} className="shop-layout">
-
-          {/* Sidebar Filters */}
-          <aside style={{ background:'#fff', borderRadius:16, border:'1px solid #e2e8f0', padding:20, height:'fit-content' }}>
-            <h3 style={{ fontSize:15, fontWeight:800, marginBottom:16, color:'#0f172a' }}>🔧 Filters</h3>
-
-            <div style={{ marginBottom:20 }}>
-              <p style={{ fontSize:12, fontWeight:700, color:'#64748b', marginBottom:10, textTransform:'uppercase', letterSpacing:.5 }}>Category</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                {CATEGORIES.map(cat => (
-                  <button key={cat} onClick={() => { setCategory(cat); setPage(1); }}
-                    style={{
-                      padding:'8px 12px', borderRadius:10, border:'1.5px solid', textAlign:'left', cursor:'pointer', fontSize:13, fontWeight:600, transition:'all .15s',
-                      borderColor: category===cat?'#2563eb':'#e2e8f0',
-                      background:  category===cat?'#eff6ff':'#fff',
-                      color:       category===cat?'#2563eb':'#475569',
-                    }}>
-                    {category===cat?'✓ ':''}{cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ marginBottom:20 }}>
-              <p style={{ fontSize:12, fontWeight:700, color:'#64748b', marginBottom:10, textTransform:'uppercase', letterSpacing:.5 }}>Price Range (PKR)</p>
-              <div style={{ display:'flex', gap:8 }}>
-                <input type="number" placeholder="Min" value={priceRange.min}
-                  onChange={e => setPriceRange(p => ({...p,min:e.target.value}))}
-                  style={{ width:'50%', padding:'8px 10px', borderRadius:8, border:'1.5px solid #e2e8f0', fontSize:13 }} />
-                <input type="number" placeholder="Max" value={priceRange.max}
-                  onChange={e => setPriceRange(p => ({...p,max:e.target.value}))}
-                  style={{ width:'50%', padding:'8px 10px', borderRadius:8, border:'1.5px solid #e2e8f0', fontSize:13 }} />
-              </div>
-              <button onClick={() => { fetchProducts(); setPage(1); }}
-                style={{ width:'100%', marginTop:8, padding:'8px', borderRadius:8, border:'none', background:'#2563eb', color:'#fff', fontWeight:700, fontSize:13, cursor:'pointer' }}>
-                Apply Filter
-              </button>
-              {(priceRange.min || priceRange.max || category!=='All' || search) && (
-                <button onClick={() => { setPriceRange({min:'',max:''}); setCategory('All'); setSearch(''); setSearchInput(''); setPage(1); }}
-                  style={{ width:'100%', marginTop:6, padding:'7px', borderRadius:8, border:'1px solid #e2e8f0', background:'#fff', color:'#64748b', fontWeight:600, fontSize:12, cursor:'pointer' }}>
-                  ✕ Clear All Filters
-                </button>
-              )}
-            </div>
-
-            <div>
-              <p style={{ fontSize:12, fontWeight:700, color:'#64748b', marginBottom:10, textTransform:'uppercase', letterSpacing:.5 }}>Sort By</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
-                {[['newest','Newest First'],['price-low','Price: Low to High'],['price-high','Price: High to Low'],['rating','Top Rated'],['popular','Most Popular']].map(([val,label]) => (
-                  <button key={val} onClick={() => setSort(val)}
-                    style={{
-                      padding:'8px 12px', borderRadius:10, border:'1.5px solid', textAlign:'left', cursor:'pointer', fontSize:13, fontWeight:600,
-                      borderColor: sort===val?'#2563eb':'#e2e8f0',
-                      background:  sort===val?'#eff6ff':'#fff',
-                      color:       sort===val?'#2563eb':'#475569',
-                    }}>
-                    {sort===val?'✓ ':''}{label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </aside>
-
-          {/* Products Grid */}
-          <div>
-            {(category!=='All' || search || priceRange.min || priceRange.max) && (
-              <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:16 }}>
-                <span style={{ fontSize:12, color:'#64748b', fontWeight:600, alignSelf:'center' }}>Active:</span>
-                {category!=='All' && (
-                  <span style={{ background:'#eff6ff', color:'#2563eb', padding:'4px 10px', borderRadius:20, fontSize:12, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
-                    {category}
-                    <button onClick={() => setCategory('All')} style={{ background:'none', border:'none', cursor:'pointer', color:'#2563eb', fontWeight:900, padding:0 }}>✕</button>
-                  </span>
-                )}
-                {search && (
-                  <span style={{ background:'#f0fdf4', color:'#166534', padding:'4px 10px', borderRadius:20, fontSize:12, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
-                    "{search}"
-                    <button onClick={() => { setSearch(''); setSearchInput(''); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#166534', fontWeight:900, padding:0 }}>✕</button>
-                  </span>
-                )}
-              </div>
-            )}
-
-            {loading ? (
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:16 }}>
-                {Array(8).fill(0).map((_,i) => (
-                  <div key={i} style={{ height:280, background:'#e2e8f0', borderRadius:16, animation:'pulse 1.5s ease-in-out infinite' }} />
-                ))}
-                <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
-              </div>
-            ) : products.length === 0 ? (
-              <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:20, border:'1px solid #e2e8f0' }}>
-                <p style={{ fontSize:60, marginBottom:12 }}>🔍</p>
-                <h3 style={{ fontSize:20, fontWeight:800, color:'#334155', marginBottom:8 }}>No products found</h3>
-                <p style={{ color:'#64748b' }}>Try different filters or search terms</p>
-              </div>
-            ) : (
-              <>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:16 }}>
-                  {products.map(product => (
-                    <Link key={product._id} to={`/product/${product._id}`} style={{ textDecoration:'none' }}>
-                      <div style={{ background:'#fff', borderRadius:16, border:'1px solid #e2e8f0', overflow:'hidden', display:'flex', flexDirection:'column', transition:'all .25s', cursor:'pointer' }}
-                        onMouseEnter={e => { e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.boxShadow='0 12px 32px rgba(0,0,0,.1)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none'; }}>
-                        <div style={{ position:'relative', paddingTop:'70%', background:'#f8fafc', overflow:'hidden' }}>
-                          <img src={product.image||product.images?.[0]||''} alt={product.name}
-                            style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', objectPosition:'center' }}
-                            onError={e => { e.target.style.display='none'; e.target.parentNode.style.background='linear-gradient(135deg,#e2e8f0,#f1f5f9)'; }} />
-                          {product.stock===0 && (
-                            <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.5)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                              <span style={{ color:'#fff', fontWeight:800, fontSize:13, background:'#ef4444', padding:'6px 14px', borderRadius:8 }}>Out of Stock</span>
-                            </div>
-                          )}
-                          {product.featured && (
-                            <div style={{ position:'absolute', top:8, left:8 }}>
-                              <span style={{ background:'linear-gradient(135deg,#f59e0b,#f97316)', color:'#fff', padding:'3px 8px', borderRadius:10, fontSize:10, fontWeight:700 }}>⭐ Featured</span>
-                            </div>
-                          )}
-                        </div>
-                        <div style={{ padding:'12px 14px 14px', flex:1, display:'flex', flexDirection:'column' }}>
-                          {product.category && <span style={{ color:'#7c3aed', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:.5, marginBottom:4 }}>{product.category}</span>}
-                          <h3 style={{ fontSize:13, fontWeight:700, color:'#1e293b', marginBottom:6, lineHeight:1.4, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{product.name}</h3>
-                          {product.rating>0 && (
-                            <div style={{ display:'flex', alignItems:'center', gap:4, marginBottom:6 }}>
-                              <span style={{ color:'#f59e0b', fontSize:11 }}>{renderStars(product.rating)}</span>
-                              <span style={{ color:'#94a3b8', fontSize:10 }}>({product.numReviews})</span>
-                            </div>
-                          )}
-                          <div style={{ marginTop:'auto' }}>
-                            <p style={{ fontSize:17, fontWeight:900, color:'#2563eb', marginBottom:8 }}>PKR {product.price?.toLocaleString()}</p>
-                            <button onClick={e => handleAddToCart(e,product)} disabled={product.stock===0}
-                              style={{
-                                width:'100%', padding:'9px', border:'none', borderRadius:10, fontWeight:700, fontSize:12,
-                                cursor: product.stock===0?'not-allowed':'pointer',
-                                background: addedId===product._id?'linear-gradient(135deg,#10b981,#059669)':product.stock===0?'#e2e8f0':'linear-gradient(135deg,#2563eb,#7c3aed)',
-                                color: product.stock===0?'#94a3b8':'#fff', transition:'all .2s',
-                              }}>
-                              {addedId===product._id?'✅ Added!':product.stock===0?'Out of Stock':'🛒 Add to Cart'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-
-                {totalPages>1 && (
-                  <div style={{ display:'flex', justifyContent:'center', gap:8, marginTop:32, flexWrap:'wrap' }}>
-                    <button onClick={() => setPage(p=>Math.max(1,p-1))} disabled={page===1}
-                      style={{ padding:'8px 16px', borderRadius:10, border:'1.5px solid #e2e8f0', background:'#fff', fontWeight:600, fontSize:13, cursor:page===1?'not-allowed':'pointer', opacity:page===1?.5:1 }}>
-                      ← Prev
-                    </button>
-                    {Array.from({length:totalPages},(_,i)=>i+1).filter(p=>p===1||p===totalPages||Math.abs(p-page)<=1).map((p,i,arr)=>(
-                      <span key={p}>
-                        {i>0&&arr[i-1]!==p-1&&<span style={{ padding:'8px 4px', color:'#94a3b8' }}>...</span>}
-                        <button onClick={() => setPage(p)}
-                          style={{ padding:'8px 14px', borderRadius:10, border:'1.5px solid', fontWeight:700, fontSize:13, cursor:'pointer', borderColor:page===p?'#2563eb':'#e2e8f0', background:page===p?'linear-gradient(135deg,#2563eb,#7c3aed)':'#fff', color:page===p?'#fff':'#334155' }}>
-                          {p}
-                        </button>
-                      </span>
-                    ))}
-                    <button onClick={() => setPage(p=>Math.min(totalPages,p+1))} disabled={page===totalPages}
-                      style={{ padding:'8px 16px', borderRadius:10, border:'1.5px solid #e2e8f0', background:'#fff', fontWeight:600, fontSize:13, cursor:page===totalPages?'not-allowed':'pointer', opacity:page===totalPages?.5:1 }}>
-                      Next →
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+    <>
+      <style>{css}</style>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #f8fafc, #eef2ff)', paddingBottom: 56 }}>
+        {/* HEADER */}
+        <div style={{ background: 'linear-gradient(135deg, #1e1b4b, #4c1d95)' }}>
+          <div className="shop-head" style={{ maxWidth: 1200, margin: '0 auto', animation: 'fadeDown 0.6s ease both' }}>
+            <h1 className="shop-title" style={{ fontWeight: 900, color: '#fff', letterSpacing: -1, marginBottom: 8 }}>🛍️ Shop All Products</h1>
+            <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 15 }}>{total > 0 ? `Browse ${total} amazing products` : 'Discover our collection'}</p>
+            <form onSubmit={handleSearch} style={{ marginTop: 20, display: 'flex', gap: 8, maxWidth: 600, background: '#fff', padding: 6, borderRadius: 14, boxShadow: '0 12px 30px rgba(0,0,0,0.2)' }}>
+              <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="🔍 Search products..." style={{ flex: 1, border: 'none', outline: 'none', padding: '11px 14px', fontSize: 14.5, borderRadius: 10, color: '#1e293b', minWidth: 0 }} />
+              <button type="submit" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', border: 'none', padding: '11px 22px', borderRadius: 10, fontWeight: 800, fontSize: 14.5, cursor: 'pointer', whiteSpace: 'nowrap' }}>Search</button>
+            </form>
           </div>
         </div>
+
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px' }}>
+          {/* Mobile filter toggle */}
+          <button className="filter-toggle" onClick={() => setShowFilters(!showFilters)} style={{ display: 'none', width: '100%', background: '#fff', border: '1px solid #e2e8f0', padding: 13, borderRadius: 12, fontWeight: 700, fontSize: 15, cursor: 'pointer', marginBottom: 16, color: '#475569' }}>
+            {showFilters ? '✕ Hide Filters' : '⚙️ Filters & Sort'}
+          </button>
+
+          {/* FILTER BAR */}
+          <div className={`filter-bar ${showFilters ? 'show' : ''}`} style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+              {CATEGORIES.map((cat) => {
+                const active = category === cat;
+                return <button key={cat} onClick={() => setCategory(cat)} style={{ border: 'none', padding: '8px 16px', borderRadius: 100, fontWeight: 700, fontSize: 13, cursor: 'pointer', background: active ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#fff', color: active ? '#fff' : '#64748b', boxShadow: active ? '0 6px 16px rgba(99,102,241,0.3)' : '0 2px 6px rgba(0,0,0,0.04)', transition: 'all 0.2s' }}>{cat}</button>;
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ border: '1px solid #e2e8f0', background: '#fff', padding: '10px 16px', borderRadius: 11, fontWeight: 700, fontSize: 13.5, color: '#475569', cursor: 'pointer', outline: 'none' }}>
+                {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', padding: '8px 16px', borderRadius: 11, border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#64748b' }}>Max: PKR {Number(maxPrice).toLocaleString()}</span>
+                <input type="range" min="1000" max="50000" step="1000" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} onMouseUp={() => setAppliedMax(Number(maxPrice))} onTouchEnd={() => setAppliedMax(Number(maxPrice))} style={{ accentColor: '#6366f1' }} />
+              </div>
+              <button onClick={clearFilters} style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '10px 16px', borderRadius: 11, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Clear All</button>
+            </div>
+          </div>
+
+          {/* PRODUCTS */}
+          {loading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 18 }}>
+              {Array(8).fill(0).map((_, i) => <Skeleton key={i} />)}
+            </div>
+          ) : products.length === 0 ? (
+            <div style={{ background: '#fff', borderRadius: 24, padding: '70px 30px', textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: 60, marginBottom: 16 }}>🔍</div>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e293b', marginBottom: 10 }}>No products found</h2>
+              <p style={{ color: '#64748b', fontSize: 15, marginBottom: 20 }}>Try adjusting your filters</p>
+              <button onClick={clearFilters} style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', border: 'none', padding: '12px 28px', borderRadius: 12, fontWeight: 700, cursor: 'pointer' }}>Clear Filters</button>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 18 }}>
+                {products.map((p, i) => <ProductCard key={p._id} product={p} index={i} />)}
+              </div>
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 44, flexWrap: 'wrap' }}>
+                  <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: '10px 16px', borderRadius: 11, border: '1px solid #e2e8f0', background: '#fff', fontWeight: 700, fontSize: 14, cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.5 : 1, color: '#475569' }}>← Prev</button>
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
+                    <button key={p} onClick={() => setPage(p)} style={{ width: 42, height: 42, borderRadius: 11, border: 'none', fontWeight: 800, fontSize: 14, cursor: 'pointer', background: page === p ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#fff', color: page === p ? '#fff' : '#475569', boxShadow: page === p ? '0 6px 16px rgba(99,102,241,0.3)' : '0 2px 6px rgba(0,0,0,0.04)' }}>{p}</button>
+                  ))}
+                  <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ padding: '10px 16px', borderRadius: 11, border: '1px solid #e2e8f0', background: '#fff', fontWeight: 700, fontSize: 14, cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.5 : 1, color: '#475569' }}>Next →</button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
-      <style>{`
-        @media(min-width:768px){ .shop-layout{ grid-template-columns: 220px 1fr !important; } }
-        input::placeholder{ color:rgba(255,255,255,.5); }
-      `}</style>
-    </div>
+    </>
   );
 }
+
+const css = `
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .shop-head { padding: 40px 16px 32px; }
+  .shop-title { font-size: 36px; }
+  @media (max-width: 768px) {
+    .shop-head { padding: 28px 16px 24px; }
+    .shop-title { font-size: 26px; }
+    .filter-toggle { display: block !important; }
+    .filter-bar { display: none; }
+    .filter-bar.show { display: block; }
+  }
+`;

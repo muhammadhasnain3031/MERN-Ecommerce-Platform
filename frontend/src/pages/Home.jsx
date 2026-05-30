@@ -1,137 +1,37 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { addToCart } from '../store/cartSlice';
-import { productAPI } from '../services/api';  // ✅ FIX
+import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { productAPI } from '../services/api';
+import ProductCard from '../components/ProductCard';
 
 const CATEGORIES = [
-  { name:'Electronics', icon:'📱', color:'#dbeafe', text:'#1e40af' },
-  { name:'Clothing',    icon:'👕', color:'#fce7f3', text:'#9d174d' },
-  { name:'Books',       icon:'📚', color:'#d1fae5', text:'#065f46' },
-  { name:'Home',        icon:'🏠', color:'#fef3c7', text:'#92400e' },
-  { name:'Sports',      icon:'⚽', color:'#ede9fe', text:'#5b21b6' },
-  { name:'Beauty',      icon:'💄', color:'#ffedd5', text:'#9a3412' },
+  { name: 'Electronics', icon: '📱', from: '#6366f1', to: '#8b5cf6' },
+  { name: 'Clothing', icon: '👕', from: '#ec4899', to: '#db2777' },
+  { name: 'Books', icon: '📚', from: '#10b981', to: '#059669' },
+  { name: 'Home', icon: '🏠', from: '#f59e0b', to: '#f97316' },
+  { name: 'Sports', icon: '⚽', from: '#3b82f6', to: '#2563eb' },
+  { name: 'Beauty', icon: '💄', from: '#f43f5e', to: '#e11d48' },
 ];
 
-function ProductCard({ product }) {
-  const dispatch = useDispatch();
-  const [added, setAdded]   = useState(false);
-  const [hover, setHover]   = useState(false);
-  const [imgSrc, setImgSrc] = useState(product.image || product.images?.[0] || '');
-
-  const handleAdd = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    dispatch(addToCart({ ...product, quantity:1 }));
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
-  };
-
-  return (
-    <Link to={`/product/${product._id}`} style={{ textDecoration:'none' }}>
-      <div
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-        style={{
-          background:'#fff', borderRadius:18, border:'1px solid #e2e8f0',
-          overflow:'hidden', display:'flex', flexDirection:'column',
-          transform:  hover ? 'translateY(-6px)' : 'none',
-          boxShadow:  hover ? '0 20px 40px rgba(0,0,0,.1)' : '0 2px 8px rgba(0,0,0,.05)',
-          transition: 'all .3s ease',
-        }}>
-
-        <div style={{ position:'relative', paddingTop:'72%', background:'#f8fafc', overflow:'hidden' }}>
-          {imgSrc ? (
-            <img src={imgSrc} alt={product.name}
-              style={{
-                position:'absolute', inset:0, width:'100%', height:'100%',
-                objectFit:'cover',
-                transform: hover ? 'scale(1.06)' : 'scale(1)',
-                transition:'transform .4s ease',
-              }}
-              onError={() => setImgSrc('')}
-            />
-          ) : (
-            <div style={{
-              position:'absolute', inset:0, display:'flex', alignItems:'center',
-              justifyContent:'center', background:'linear-gradient(135deg,#f1f5f9,#e2e8f0)',
-            }}>
-              <span style={{ fontSize:48, opacity:.4 }}>📦</span>
-            </div>
-          )}
-          <div style={{ position:'absolute', top:10, left:10, display:'flex', flexDirection:'column', gap:4 }}>
-            {product.featured && (
-              <span style={{ background:'linear-gradient(135deg,#f59e0b,#f97316)', color:'#fff', padding:'3px 9px', borderRadius:20, fontSize:10, fontWeight:700 }}>⭐ Featured</span>
-            )}
-            {product.stock === 0 && (
-              <span style={{ background:'rgba(239,68,68,.9)', color:'#fff', padding:'3px 9px', borderRadius:20, fontSize:10, fontWeight:700 }}>Out of Stock</span>
-            )}
-            {product.stock > 0 && product.stock <= 5 && (
-              <span style={{ background:'rgba(245,158,11,.9)', color:'#fff', padding:'3px 9px', borderRadius:20, fontSize:10, fontWeight:700 }}>Only {product.stock} left!</span>
-            )}
-          </div>
-        </div>
-
-        <div style={{ padding:'14px 14px 16px', flex:1, display:'flex', flexDirection:'column' }}>
-          {product.category && (
-            <span style={{ color:'#7c3aed', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:.6, marginBottom:5 }}>
-              {product.category}
-            </span>
-          )}
-          <h3 style={{
-            fontSize:14, fontWeight:700, color:'#1e293b', lineHeight:1.4, marginBottom:6,
-            display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden',
-          }}>
-            {product.name}
-          </h3>
-          {product.rating > 0 && (
-            <div style={{ display:'flex', alignItems:'center', gap:4, marginBottom:8 }}>
-              <span style={{ color:'#f59e0b', fontSize:12 }}>
-                {'★'.repeat(Math.round(product.rating))}{'☆'.repeat(5-Math.round(product.rating))}
-              </span>
-              <span style={{ color:'#94a3b8', fontSize:11 }}>({product.numReviews})</span>
-            </div>
-          )}
-          <div style={{ marginTop:'auto' }}>
-            <p style={{ fontSize:19, fontWeight:900, color:'#2563eb', marginBottom:10 }}>
-              PKR {product.price?.toLocaleString()}
-            </p>
-            <button onClick={handleAdd} disabled={product.stock === 0}
-              style={{
-                width:'100%', padding:'10px', borderRadius:12, border:'none',
-                fontWeight:700, fontSize:13,
-                cursor: product.stock === 0 ? 'not-allowed' : 'pointer',
-                background: added
-                  ? 'linear-gradient(135deg,#10b981,#059669)'
-                  : product.stock === 0 ? '#e2e8f0'
-                  : 'linear-gradient(135deg,#2563eb,#7c3aed)',
-                color:      product.stock === 0 ? '#94a3b8' : '#fff',
-                boxShadow:  product.stock > 0 && !added ? '0 3px 10px rgba(37,99,235,.3)' : 'none',
-                transition: 'all .2s',
-              }}>
-              {added ? '✅ Added to Cart!' : product.stock === 0 ? '❌ Out of Stock' : '🛒 Add to Cart'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
+function Skeleton() {
+  return <div style={{ borderRadius: 20, paddingTop: '120%', background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />;
 }
 
 export default function Home() {
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
   const [featured, setFeatured] = useState([]);
-  const [latest,   setLatest]   = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [search,   setSearch]   = useState('');
+  const [latest, setLatest] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   const fetchProducts = useCallback(async () => {
+    setLoading(true);
     try {
       const [f, l] = await Promise.all([
-        productAPI.getAll('featured=true&limit=8'),  // ✅ FIX
-        productAPI.getAll('limit=8&sort=newest'),     // ✅ FIX
+        productAPI.getAll('featured=true&limit=8'),
+        productAPI.getAll('limit=8&sort=newest'),
       ]);
       setFeatured(f.products || []);
-      setLatest(l.products   || []);
+      setLatest(l.products || []);
     } catch (err) { console.error(err); }
     setLoading(false);
   }, []);
@@ -144,200 +44,120 @@ export default function Home() {
   };
 
   return (
-    <div>
-      {/* Hero */}
-      <section style={{
-        background: 'linear-gradient(135deg,#0f172a 0%,#1e3a8a 45%,#2563eb 75%,#7c3aed 100%)',
-        minHeight: 560, position:'relative', overflow:'hidden',
-        display:'flex', alignItems:'center',
-      }}>
-        <div style={{ position:'absolute', top:'-80px', right:'-80px', width:'400px', height:'400px', background:'rgba(124,58,237,.12)', borderRadius:'50%', filter:'blur(80px)' }} />
-        <div style={{ position:'absolute', bottom:'-80px', left:'-80px', width:'350px', height:'350px', background:'rgba(37,99,235,.12)', borderRadius:'50%', filter:'blur(80px)' }} />
-
-        <div className="container" style={{ position:'relative', zIndex:1, padding:'60px 16px' }}>
-          <div style={{ maxWidth:580 }}>
-            <div style={{
-              display:'inline-flex', alignItems:'center', gap:8,
-              background:'rgba(245,158,11,.15)', border:'1px solid rgba(245,158,11,.3)',
-              borderRadius:24, padding:'5px 16px', marginBottom:20,
-            }}>
-              <span>🔥</span>
-              <span style={{ color:'#fbbf24', fontSize:12, fontWeight:700 }}>New Arrivals Every Week · Free Delivery on PKR 2000+</span>
+    <>
+      <style>{css}</style>
+      <div style={{ background: 'linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)', minHeight: '100vh' }}>
+        {/* HERO */}
+        <div style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #6d28d9 100%)' }}>
+          <div style={{ position: 'absolute', top: -120, right: -80, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.4), transparent 70%)', animation: 'blob 14s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', bottom: -150, left: -100, width: 450, height: 450, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.35), transparent 70%)', animation: 'blob 18s ease-in-out infinite reverse' }} />
+          <div className="hero-pad" style={{ maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 2, textAlign: 'center' }}>
+            <div style={{ animation: 'fadeUp 0.8s ease both' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)', color: '#fff', padding: '7px 16px', borderRadius: 100, fontSize: 12.5, fontWeight: 700, marginBottom: 22, border: '1px solid rgba(255,255,255,0.2)' }}>✨ Premium Shopping Experience</span>
+              <h1 className="hero-title" style={{ fontWeight: 900, color: '#fff', lineHeight: 1.05, letterSpacing: -2, marginBottom: 18 }}>
+                Shop Smarter at<br /><span style={{ background: 'linear-gradient(135deg, #fbbf24, #f472b6, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Sultan Elite</span>
+              </h1>
+              <p className="hero-sub" style={{ color: 'rgba(255,255,255,0.8)', maxWidth: 580, margin: '0 auto 32px', lineHeight: 1.6 }}>Discover thousands of quality products at unbeatable prices. Fast delivery, secure payments.</p>
+              <form onSubmit={handleSearch} style={{ maxWidth: 560, margin: '0 auto 30px', display: 'flex', gap: 8, background: '#fff', padding: 7, borderRadius: 16, boxShadow: '0 20px 50px rgba(0,0,0,0.3)' }}>
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Search products..." style={{ flex: 1, border: 'none', outline: 'none', padding: '12px 16px', fontSize: 15, borderRadius: 11, color: '#1e293b', minWidth: 0 }} />
+                <button type="submit" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', border: 'none', padding: '12px 26px', borderRadius: 11, fontWeight: 800, fontSize: 14.5, cursor: 'pointer', whiteSpace: 'nowrap' }}>Search</button>
+              </form>
+              <div style={{ display: 'flex', gap: 28, justifyContent: 'center', flexWrap: 'wrap' }}>
+                {[{ n: '10K+', l: 'Products' }, { n: '50K+', l: 'Customers' }, { n: '99%', l: 'Satisfaction' }, { n: '24/7', l: 'Support' }].map((s, i) => (
+                  <div key={s.l} style={{ textAlign: 'center', animation: `fadeUp 0.8s ease ${0.2 + i * 0.1}s both` }}>
+                    <p style={{ fontSize: 26, fontWeight: 900, color: '#fff' }}>{s.n}</p>
+                    <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{s.l}</p>
+                  </div>
+                ))}
+              </div>
             </div>
+          </div>
+          <svg viewBox="0 0 1440 70" style={{ display: 'block', width: '100%', height: 60 }} preserveAspectRatio="none"><path d="M0,35 C360,75 1080,0 1440,35 L1440,70 L0,70 Z" fill="#f8fafc" /></svg>
+        </div>
 
-            <h1 style={{ fontSize:'clamp(30px,5.5vw,60px)', fontWeight:900, color:'#fff', lineHeight:1.15, marginBottom:18 }}>
-              Pakistan's Most{' '}
-              <span style={{ background:'linear-gradient(135deg,#f59e0b,#f97316)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
-                Trusted
-              </span>
-              <br />Online Store
-            </h1>
-
-            <p style={{ color:'rgba(255,255,255,.7)', fontSize:16, lineHeight:1.8, marginBottom:32, maxWidth:460 }}>
-              Shop the latest electronics, fashion, books and more. Authentic products, best prices, fast delivery.
-            </p>
-
-            <form onSubmit={handleSearch} style={{ display:'flex', gap:8, marginBottom:32, maxWidth:460 }}>
-              <input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Search for products..."
-                style={{
-                  flex:1, padding:'13px 20px', borderRadius:14,
-                  border:'1.5px solid rgba(255,255,255,.2)',
-                  background:'rgba(255,255,255,.12)',
-                  color:'#fff', fontSize:14, backdropFilter:'blur(10px)',
-                }} />
-              <button type="submit" style={{
-                padding:'13px 22px', borderRadius:14, border:'none',
-                background:'linear-gradient(135deg,#f59e0b,#f97316)',
-                color:'#fff', fontWeight:800, fontSize:14,
-                boxShadow:'0 4px 14px rgba(245,158,11,.4)',
-              }}>Search</button>
-            </form>
-
-            <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
-              <Link to="/shop" style={{
-                background:'linear-gradient(135deg,#f59e0b,#f97316)',
-                color:'#fff', padding:'13px 28px', borderRadius:13,
-                fontWeight:800, fontSize:15,
-                boxShadow:'0 4px 18px rgba(245,158,11,.4)',
-              }}>🛍️ Shop Now</Link>
-              <Link to="/shop?category=Electronics" style={{
-                background:'rgba(255,255,255,.12)',
-                border:'1.5px solid rgba(255,255,255,.25)',
-                color:'#fff', padding:'13px 28px', borderRadius:13,
-                fontWeight:700, fontSize:15, backdropFilter:'blur(10px)',
-              }}>View Deals →</Link>
-            </div>
-
-            <div style={{ display:'flex', gap:28, marginTop:36, flexWrap:'wrap' }}>
-              {[['500+','Products'],['50k+','Customers'],['100%','Authentic'],['Fast','Delivery']].map(([v,l]) => (
-                <div key={l}>
-                  <p style={{ color:'#fff', fontWeight:900, fontSize:22, lineHeight:1 }}>{v}</p>
-                  <p style={{ color:'rgba(255,255,255,.5)', fontSize:12, marginTop:2 }}>{l}</p>
-                </div>
+        <div className="container" style={{ maxWidth: 1200, margin: '0 auto' }}>
+          {/* CATEGORIES */}
+          <section style={{ marginBottom: 56 }}>
+            <h2 className="sec-title" style={{ fontWeight: 900, color: '#0f172a', textAlign: 'center', marginBottom: 6, letterSpacing: -0.5 }}>Shop by Category</h2>
+            <p style={{ color: '#64748b', fontSize: 15, textAlign: 'center', marginBottom: 32 }}>Find exactly what you're looking for</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16 }}>
+              {CATEGORIES.map((cat, i) => (
+                <button key={cat.name} onClick={() => navigate(`/shop?category=${cat.name}`)} style={{ border: 'none', cursor: 'pointer', background: '#fff', borderRadius: 18, padding: '24px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)', animation: `cardIn 0.5s ease ${i * 0.07}s both` }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 16px 32px rgba(0,0,0,0.12)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.05)'; }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, background: `linear-gradient(135deg, ${cat.from}, ${cat.to})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, boxShadow: `0 8px 20px ${cat.from}55` }}>{cat.icon}</div>
+                  <span style={{ fontWeight: 700, fontSize: 13.5, color: '#1e293b' }}>{cat.name}</span>
+                </button>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      {/* Features Strip */}
-      <section style={{ background:'#fff', borderBottom:'1px solid #e2e8f0', padding:'16px 0' }}>
-        <div className="container">
-          <div style={{ display:'flex', justifyContent:'space-around', flexWrap:'wrap', gap:12 }}>
-            {[
-              ['🚚','Free Delivery','On orders PKR 2000+'],
-              ['✅','100% Authentic','Verified products'],
-              ['↩️','Easy Returns','7-day return'],
-              ['🔒','Secure Payment','Safe & encrypted'],
-              ['📞','24/7 Support','Always available'],
-            ].map(([icon,title,sub]) => (
-              <div key={title} style={{ display:'flex', alignItems:'center', gap:10, padding:'4px 8px' }}>
-                <span style={{ fontSize:22 }}>{icon}</span>
-                <div>
-                  <p style={{ fontWeight:700, fontSize:13, color:'#1e293b' }}>{title}</p>
-                  <p style={{ fontSize:11, color:'#94a3b8' }}>{sub}</p>
-                </div>
+          {/* FEATURES STRIP */}
+          <section style={{ marginBottom: 56, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+            {[{ icon: '🚚', t: 'Free Shipping', d: 'Orders over PKR 2,000', c: '#6366f1' }, { icon: '🔒', t: 'Secure Payment', d: '100% protected', c: '#10b981' }, { icon: '↩️', t: 'Easy Returns', d: '7-day policy', c: '#f59e0b' }, { icon: '💬', t: '24/7 Support', d: 'Always here', c: '#ec4899' }].map((f, i) => (
+              <div key={f.t} style={{ background: '#fff', borderRadius: 16, padding: 20, display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animation: `cardIn 0.5s ease ${i * 0.07}s both` }}>
+                <div style={{ width: 48, height: 48, borderRadius: 13, background: f.c, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, opacity: 0.95 }}>{f.icon}</div>
+                <div><p style={{ fontWeight: 800, fontSize: 14.5, color: '#1e293b' }}>{f.t}</p><p style={{ fontSize: 12.5, color: '#64748b', marginTop: 2 }}>{f.d}</p></div>
               </div>
             ))}
-          </div>
+          </section>
+
+          {/* FEATURED */}
+          <Section title="Featured Products" emoji="⭐" subtitle="Hand-picked favorites" to="/shop?featured=true" navigate={navigate} loading={loading} products={featured} />
+          {/* LATEST */}
+          <Section title="New Arrivals" emoji="🆕" subtitle="Fresh products added recently" to="/shop" navigate={navigate} loading={loading} products={latest} />
+
+          {/* CTA */}
+          <section style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #1e1b4b, #4c1d95)', borderRadius: 28, padding: '52px 32px', textAlign: 'center', marginBottom: 56 }}>
+            <div style={{ position: 'absolute', top: -80, right: -40, width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(168,85,247,0.4), transparent 70%)', animation: 'blob 12s ease-in-out infinite' }} />
+            <div style={{ position: 'relative', zIndex: 2 }}>
+              <h2 className="sec-title" style={{ fontWeight: 900, color: '#fff', marginBottom: 12, letterSpacing: -1 }}>Ready to Start Shopping?</h2>
+              <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginBottom: 28, maxWidth: 480, margin: '0 auto 28px' }}>Join thousands of happy customers today.</p>
+              <button onClick={() => navigate('/shop')} style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', color: '#1e1b4b', border: 'none', padding: '15px 40px', borderRadius: 14, fontWeight: 900, fontSize: 16, cursor: 'pointer', boxShadow: '0 12px 30px rgba(251,191,36,0.4)' }}>🛍️ Explore All Products</button>
+            </div>
+          </section>
         </div>
-      </section>
-
-      {/* Categories */}
-      <section style={{ padding:'48px 0' }}>
-        <div className="container">
-          <div style={{ textAlign:'center', marginBottom:32 }}>
-            <p style={{ color:'#7c3aed', fontWeight:700, fontSize:12, textTransform:'uppercase', letterSpacing:1, marginBottom:6 }}>Browse By</p>
-            <h2 style={{ fontSize:'clamp(22px,3vw,32px)', fontWeight:900, color:'#0f172a' }}>Popular Categories</h2>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))', gap:12 }}>
-            {CATEGORIES.map(cat => (
-              <Link key={cat.name} to={`/shop?category=${cat.name}`} style={{ textDecoration:'none' }}>
-                <div style={{
-                  background: cat.color, borderRadius:16, padding:'20px 16px', textAlign:'center',
-                  transition:'all .2s', cursor:'pointer', border:`1px solid ${cat.text}20`,
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,.1)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none'; }}>
-                  <p style={{ fontSize:32, marginBottom:8 }}>{cat.icon}</p>
-                  <p style={{ fontWeight:700, fontSize:13, color:cat.text }}>{cat.name}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Products */}
-      {!loading && featured.length > 0 && (
-        <section style={{ padding:'0 0 48px', background:'#f8fafc' }}>
-          <div className="container">
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24, flexWrap:'wrap', gap:12 }}>
-              <div>
-                <p style={{ color:'#f59e0b', fontWeight:700, fontSize:12, textTransform:'uppercase', letterSpacing:1, marginBottom:4 }}>Hand-picked</p>
-                <h2 style={{ fontSize:'clamp(20px,3vw,28px)', fontWeight:900, color:'#0f172a' }}>⭐ Featured Products</h2>
-              </div>
-              <Link to="/shop?featured=true" style={{ color:'#2563eb', fontWeight:700, fontSize:14, border:'1.5px solid #2563eb', padding:'8px 18px', borderRadius:10 }}>View All →</Link>
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:18 }}>
-              {featured.map(p => <ProductCard key={p._id} product={p} />)}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Latest Products */}
-      <section style={{ padding:'48px 0 60px' }}>
-        <div className="container">
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24, flexWrap:'wrap', gap:12 }}>
-            <div>
-              <p style={{ color:'#7c3aed', fontWeight:700, fontSize:12, textTransform:'uppercase', letterSpacing:1, marginBottom:4 }}>Fresh in store</p>
-              <h2 style={{ fontSize:'clamp(20px,3vw,28px)', fontWeight:900, color:'#0f172a' }}>🆕 Latest Products</h2>
-            </div>
-            <Link to="/shop" style={{ color:'#2563eb', fontWeight:700, fontSize:14, border:'1.5px solid #2563eb', padding:'8px 18px', borderRadius:10 }}>Shop All →</Link>
-          </div>
-
-          {loading ? (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:18 }}>
-              {Array(8).fill(0).map((_,i) => (
-                <div key={i} style={{ height:300, background:'#e2e8f0', borderRadius:18, animation:'shimmer 1.5s ease-in-out infinite' }} />
-              ))}
-            </div>
-          ) : latest.length === 0 ? (
-            <div style={{ textAlign:'center', padding:'60px 0', color:'#94a3b8' }}>
-              <p style={{ fontSize:50, marginBottom:12 }}>📦</p>
-              <p style={{ fontWeight:700, fontSize:18 }}>No products yet</p>
-            </div>
-          ) : (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:18 }}>
-              {latest.map(p => <ProductCard key={p._id} product={p} />)}
-            </div>
-          )}
-
-          <div style={{ textAlign:'center', marginTop:36 }}>
-            <Link to="/shop" style={{
-              display:'inline-flex', alignItems:'center', gap:8,
-              background:'linear-gradient(135deg,#2563eb,#7c3aed)',
-              color:'#fff', padding:'14px 36px', borderRadius:14,
-              fontWeight:800, fontSize:15, boxShadow:'0 4px 16px rgba(37,99,235,.3)',
-            }}>🛍️ View All Products →</Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Banner */}
-      <section style={{ background:'linear-gradient(135deg,#1e3a8a,#7c3aed)', padding:'48px 24px', textAlign:'center' }}>
-        <div className="container">
-          <h2 style={{ color:'#fff', fontSize:'clamp(20px,4vw,36px)', fontWeight:900, marginBottom:12 }}>🎁 Get Free Delivery Today!</h2>
-          <p style={{ color:'rgba(255,255,255,.75)', fontSize:16, marginBottom:28 }}>Order above PKR 2,000 and enjoy free nationwide delivery</p>
-          <Link to="/shop" style={{
-            background:'linear-gradient(135deg,#f59e0b,#f97316)', color:'#fff',
-            padding:'14px 36px', borderRadius:14, fontWeight:800, fontSize:16,
-            boxShadow:'0 4px 18px rgba(245,158,11,.4)', display:'inline-block',
-          }}>Start Shopping →</Link>
-        </div>
-      </section>
-    </div>
+      </div>
+    </>
   );
 }
+
+function Section({ title, emoji, subtitle, to, navigate, loading, products }) {
+  return (
+    <section style={{ marginBottom: 56 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h2 className="sec-title" style={{ fontWeight: 900, color: '#0f172a', letterSpacing: -0.5 }}>{emoji} {title}</h2>
+          <p style={{ color: '#64748b', fontSize: 14.5, marginTop: 5 }}>{subtitle}</p>
+        </div>
+        <button onClick={() => navigate(to)} style={{ background: '#fff', border: '1px solid #e2e8f0', color: '#6366f1', padding: '9px 18px', borderRadius: 11, fontWeight: 700, fontSize: 13.5, cursor: 'pointer' }}>View All →</button>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 18 }}>
+        {loading
+          ? Array(8).fill(0).map((_, i) => <Skeleton key={i} />)
+          : products.length > 0
+            ? products.map((p, i) => <ProductCard key={p._id} product={p} index={i} />)
+            : <p style={{ color: '#94a3b8', gridColumn: '1/-1', textAlign: 'center', padding: 40 }}>No products yet. Add some from Admin panel!</p>}
+      </div>
+    </section>
+  );
+}
+
+const css = `
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes blob { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px,-40px) scale(1.15); } }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .container { padding: 56px 20px; }
+  .hero-pad { padding: 70px 20px 50px; }
+  .hero-title { font-size: 56px; }
+  .hero-sub { font-size: 19px; }
+  .sec-title { font-size: 30px; }
+  @media (max-width: 768px) {
+    .container { padding: 40px 16px; }
+    .hero-pad { padding: 48px 16px 36px; }
+    .hero-title { font-size: 34px; }
+    .hero-sub { font-size: 15px; }
+    .sec-title { font-size: 24px; }
+  }
+`;

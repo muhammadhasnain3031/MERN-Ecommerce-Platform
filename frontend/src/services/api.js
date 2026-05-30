@@ -1,80 +1,139 @@
-// src/services/api.js
-import BASE_URL from '../api';
+import axios from 'axios';
 
-const getToken = () => localStorage.getItem('token');
+// API Base URL
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-const authHeaders = () => ({
-  'Content-Type': 'application/json',
-  Authorization: `Bearer ${getToken()}`,
+// Create axios instance
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-// ── Order API ─────────────────────────────────────────────────
-export const orderAPI = {
-  create: async (orderData) => {
-    const res = await fetch(`${BASE_URL}/api/orders`, {
-      method:  'POST',
-      headers: authHeaders(),
-      body:    JSON.stringify(orderData),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Order failed');
+// Add token to requests
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Handle responses and errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    // Return clean error message
+    const message = error.response?.data?.message || error.message || 'Something went wrong';
+    return Promise.reject(new Error(message));
+  }
+);
+
+// ── Auth API ──────────────────────────────────────────────────
+export const authAPI = {
+  login: async (credentials) => {
+    const { data } = await api.post('/auth/login', credentials);
     return data;
   },
-
-  getMyOrders: async () => {
-    const res = await fetch(`${BASE_URL}/api/orders/myorders`, {
-      headers: authHeaders(),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Failed');
+  register: async (userData) => {
+    const { data } = await api.post('/auth/register', userData);
     return data;
   },
-
-  getAll: async () => {
-    const res = await fetch(`${BASE_URL}/api/orders`, {
-      headers: authHeaders(),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Failed');
-    return data;
-  },
-
-  updateStatus: async (id, status) => {
-    const res = await fetch(`${BASE_URL}/api/orders/${id}/status`, {
-      method:  'PUT',
-      headers: authHeaders(),
-      body:    JSON.stringify({ status }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Failed');
+  getProfile: async () => {
+    const { data } = await api.get('/auth/profile');
     return data;
   },
 };
 
 // ── Product API ───────────────────────────────────────────────
 export const productAPI = {
-  getAll: async (params = '') => {
-    const res  = await fetch(`${BASE_URL}/api/products?${params}`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Failed');
+  getAll: async (queryString = '') => {
+    const { data } = await api.get(`/products?${queryString}`);
     return data;
   },
-
   getById: async (id) => {
-    const res  = await fetch(`${BASE_URL}/api/products/${id}`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Failed');
+    const { data } = await api.get(`/products/${id}`);
     return data;
   },
-
-  addReview: async (id, reviewData) => {
-    const res = await fetch(`${BASE_URL}/api/products/${id}/reviews`, {
-      method:  'POST',
-      headers: authHeaders(),
-      body:    JSON.stringify(reviewData),
+  create: async (formData) => {
+    const { data } = await api.post('/products', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Failed');
+    return data;
+  },
+  update: async (id, formData) => {
+    const { data } = await api.put(`/products/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  },
+  delete: async (id) => {
+    const { data } = await api.delete(`/products/${id}`);
     return data;
   },
 };
+
+// ── Order API (FIXED endpoints to match backend) ──────────────
+export const orderAPI = {
+  create: async (orderData) => {
+    const { data } = await api.post('/orders', orderData);
+    return data;
+  },
+  // ✅ FIXED: backend route is /orders/myorders, not /orders/my
+  getMyOrders: async () => {
+    const { data } = await api.get('/orders/myorders');
+    return data;
+  },
+  getAllOrders: async () => {
+    const { data } = await api.get('/orders');
+    return data;
+  },
+  getById: async (id) => {
+    const { data } = await api.get(`/orders/${id}`);
+    return data;
+  },
+  // ✅ FIXED: backend route is /orders/:id/status
+  updateStatus: async (id, status) => {
+    const { data } = await api.put(`/orders/${id}/status`, { status });
+    return data;
+  },
+  markPaid: async (id) => {
+    const { data } = await api.put(`/orders/${id}/pay`);
+    return data;
+  },
+};
+
+// ── Cart API ──────────────────────────────────────────────────
+export const cartAPI = {
+  get: async () => {
+    const { data } = await api.get('/cart');
+    return data;
+  },
+  add: async (productId, quantity) => {
+    const { data } = await api.post('/cart', { productId, quantity });
+    return data;
+  },
+  update: async (productId, quantity) => {
+    const { data } = await api.put('/cart', { productId, quantity });
+    return data;
+  },
+  remove: async (productId) => {
+    const { data } = await api.delete(`/cart/${productId}`);
+    return data;
+  },
+  clear: async () => {
+    const { data } = await api.delete('/cart');
+    return data;
+  },
+};
+
+export default api;
